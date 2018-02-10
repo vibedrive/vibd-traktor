@@ -1,24 +1,26 @@
-#vibd-traktor
+# vibd-traktor
 
 Loosely organized scripts for working with Native Instruments Traktor 2.x files within the vibd ecosystem.
 
 ## find-collection-file
 
-#### ` parseCollection(callback)
+`var findCollectionFile = require('vibd-traktor/find-collection-file')`
+
+#### `findCollectionFile(callback)`
 
 calls back with the path to your Traktor collection file.
 
-`var findCollectionFile = require('vibd-traktor/find-collection-file')`
 
 
 ## parse-collection
 
-#### ` parseCollection([,filepath], callback)
+`var parseCollection = require('vibd-traktor/parse-collection')`
+
+#### `parseCollection([,filepath], callback)`
 
 given the path to a collection file, returns it as a serialized json dictionary of `AUDIO_ID`
 if no filepath is given, it will try to find it. 
 
-`var parseCollection = require('vibd-traktor/parse-collection')`
 
 **Example input:**
 

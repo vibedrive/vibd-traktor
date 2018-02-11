@@ -25,6 +25,8 @@ $ vibd import --format=traktor
 
 ### `collection.toXML()`
 
+---
+## files
 
 ### find-collection-file
 

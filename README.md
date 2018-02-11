@@ -19,7 +19,6 @@ $ vibd import --format=traktor
 ## `collection = traktor.Collection()`
 
 
-
 ### `collection.load([<pathToCollectionFile>])`
 
 

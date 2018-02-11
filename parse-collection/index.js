@@ -14,6 +14,7 @@ if (require.main === module) {
 
 function out (err, obj) {
   if (err) return process.stderr.write(err)
+
   process.stdout.write(JSON.stringify(obj, null, 2))
 }
 
@@ -28,7 +29,6 @@ function parseCollection (filepath, callback) {
   var collection = Collection()
 
   collection.onLoad = function () {
-    console.log('done')
     callback(null, collection.entries)
   }
 

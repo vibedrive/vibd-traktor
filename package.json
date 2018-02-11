@@ -10,9 +10,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
+    "bel": "^5.1.6",
     "glob": "^7.1.2",
-    "to-camel-case": "^1.0.0",
-    "xml-js": "^1.6.2"
   },
   "devDependencies": {
     "standard": "^10.0.3"

@@ -1,7 +1,7 @@
+var xml = require('bel')
 var fs = require('fs')
 var path = require('path')
 var parseXml = require('@rgrove/parse-xml')
-var toCamelCase = require('to-camel-case')
 var noop = function () {}
 
 var findCollectionFile = require('./find-collection-file')
@@ -11,7 +11,7 @@ module.exports = Collection
 function Collection () {
   if (!(this instanceof Collection)) return new Collection()
 
-  this.entries = null
+  this.entries = []
   this._xml = fs.readFileSync(path.join(__dirname, 'collection.nml'), 'utf-8')
 }
 
@@ -20,7 +20,36 @@ Collection.prototype.onError = noop
 
 Collection.prototype.toXML = function () {
   // take this.xml and rewrite entries from this.entries
-  return this._xml
+
+  return xml`
+    <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+    <NML VERSION="19">
+      <HEAD COMPANY="www.native-instruments.com" PROGRAM="Traktor"></HEAD>
+      <MUSICFOLDERS></MUSICFOLDERS>
+      <COLLECTION ENTRIES="${this.entries.length}"">
+        ${this.entries.map((entry, i) => {
+          var attrs = {}
+          Object.keys(entry.attributes).forEach(key => {
+            attrs[key] = entry.attributes[key]
+          })
+
+          return xml`
+            <ENTRY ${attrs}}>
+              ${Object.keys(entry.children).map(name => {
+                var attributes = entry.children[name]
+                var attrs = {}
+                Object.keys(attributes).forEach(key => {
+                  attrs[key] = attributes[key]
+                })
+
+                return xml`<${name} ${attrs}></${name}>`
+              })}
+            </ENTRY>`
+        })}
+      </COLLECTION>
+      <SETS></SETS>
+      <PLAYLISTS></PLAYLISTS>
+    </NML>`.toString()
 }
 
 Collection.prototype.load = function (pathToCollectionFile) {
@@ -50,38 +79,9 @@ Collection.prototype.parse = function () {
   var nml = obj.children[0].toJSON()
   var collection = nml.children.find(node => node.name === 'COLLECTION')
   var filtered = collection.children.filter(isValidNode)
-  var entries = {}
 
-  filtered.forEach(entry => {
-    entry = entry.toJSON()
-    entry.children.push({
-      name: 'attributes',
-      attributes: entry.attributes
-    })
+  this.entries = filtered.map(entry => Entry(entry))
 
-    var track = {}
-
-    entry.children
-      .filter(node => node.name)
-      .forEach(node => {
-        var attrs = Object.keys(node.attributes)
-          .reduce((dict, key) => {
-            var nextKey = toCamelCase(key.toLowerCase())
-            dict[nextKey] = node.attributes[key]
-
-            return dict
-          }, {})
-
-        track[toCamelCase(node.name.toLowerCase())] = attrs
-      })
-
-    var audioId = track.attributes.audioId
-
-    entries[audioId] = track
-    delete track.attributes.audioId
-  })
-
-  this.entries = entries
   this.onLoad()
 }
 
@@ -93,4 +93,25 @@ function isValidNode (node) {
     node.ARTIST !== 'Native Instruments' &&
     node.ARTIST !== 'Loopmasters'
   )
+}
+
+function Entry (entry) {
+  if (!(this instanceof Entry)) return new Entry(entry)
+
+  this.attributes = entry.attributes
+  this.children = entry.children
+    .filter(node => node.type === 'element')
+    .map(node => node.toJSON())
+    .reduce((children, node) => {
+      children[node.name] = node.attributes
+
+      return children
+    }, {})
+}
+
+Entry.prototype.location = function () {
+  var dir = this.children['LOCATION']['DIR'].replace(/\/:/g, '/')
+  var filename = this.children['LOCATION']['FILE']
+
+  return path.join(dir, filename)
 }

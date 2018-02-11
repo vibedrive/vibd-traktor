@@ -1,31 +1,65 @@
 # vibd-traktor
 
-Loosely organized scripts for working with Native Instruments Traktor 2.x files within the vibd ecosystem.
+a [vibd](https://github.com/vibedrive/vibd) import plugin for importing collections from Traktor.
 
-## find-collection-file
+```shell
+$ vibd import --format=traktor
+```
 
-`var findCollectionFile = require('vibd-traktor/find-collection-file')`
+- find all the files in your traktor collection that are not already in vibd
+- create items for these tracks in vibd with the traktor metadata
+- copy these files over to the same folder
+- generate a new traktor collection file with the file paths pointing to your single music folder
 
-#### `findCollectionFile(callback)`
+
+## api
+
+`var traktor = require('vibd-tratkor')`
+
+## `collection = traktor.Collection()`
+
+
+
+### `collection.load([<pathToCollectionFile>])`
+
+
+### `collection.toXML()`
+
+---
+## files
+
+### find-collection-file
+
+```js
+var findCollectionFile = require('vibd-traktor/find-collection-file')
+
+findCollectionFile(callback)
+```
 
 Calls back with the path to your Traktor collection file.
 
-## parse-collection
+### parse-collection
 
-`var parseCollection = require('vibd-traktor/parse-collection')`
+```js
+var parseCollection = require('vibd-traktor/parse-collection')
 
-#### `parseCollection([,filepath], callback)`
+parseCollection([,filepath], function callback (err, entries) {
+})
+```
 
 Given the path to a collection file, calls back with a serialized json dictionary of `AUDIO_ID`. 
 If no filepath is given, it will try to find it. 
 
 
-## generate-collection
+### generate-collection
 
-`var parseCollection = require('vibd-traktor/generate-collection')`
+```js
+var parseCollection = require('vibd-traktor/generate-collection')
 
-#### `generateCollection(collection, callback)`
-
+generateCollection([,collection], function callback (err, entries) {
+})
+```
+Takes an optional collection instance.
 Calls back with serialized nml collection file.
 
 ---

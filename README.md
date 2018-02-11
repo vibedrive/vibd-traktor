@@ -28,7 +28,9 @@ If no filepath is given, it will try to find it.
 
 Calls back with serialized nml collection file.
 
-**Example input:**
+---
+
+**example parse-collection input:**
 
 ```xml
   ...
@@ -71,7 +73,7 @@ Calls back with serialized nml collection file.
   ...
 ```
 
-**Example output:**
+**example parse-collection output:**
 
 ```json
 {

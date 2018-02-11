@@ -8,9 +8,7 @@ Loosely organized scripts for working with Native Instruments Traktor 2.x files 
 
 #### `findCollectionFile(callback)`
 
-calls back with the path to your Traktor collection file.
-
-
+Calls back with the path to your Traktor collection file.
 
 ## parse-collection
 
@@ -18,9 +16,17 @@ calls back with the path to your Traktor collection file.
 
 #### `parseCollection([,filepath], callback)`
 
-given the path to a collection file, returns it as a serialized json dictionary of `AUDIO_ID`
-if no filepath is given, it will try to find it. 
+Given the path to a collection file, calls back with a serialized json dictionary of `AUDIO_ID`. 
+If no filepath is given, it will try to find it. 
 
+
+## generate-collection
+
+`var parseCollection = require('vibd-traktor/generate-collection')`
+
+#### `generateCollection(collection, callback)`
+
+Calls back with serialized nml collection file.
 
 **Example input:**
 

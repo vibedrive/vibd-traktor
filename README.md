@@ -1,6 +1,15 @@
 # vibd-traktor
 
-Loosely organized scripts for working with Native Instruments Traktor 2.x files within the vibd ecosystem.
+a [vibd](https://github.com/vibedrive/vibd) import plugin for importing collections from Traktor.
+
+```shell
+$ vibd import --format=traktor
+```
+
+- find all the files in your traktor collection that are not already in vibd
+- create items for these tracks in vibd with the traktor metadata
+- copy these files over to the same folder
+- generate a new traktor collection file with the file paths pointing to your single music folder
 
 ## find-collection-file
 

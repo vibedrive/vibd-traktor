@@ -1,8 +1,8 @@
-var xml = require('bel')
 var fs = require('fs')
+var os = require('os')
 var path = require('path')
-var parseXml = require('@rgrove/parse-xml')
-var noop = function () {}
+var et = require('elementtree')
+var pd = require('pretty-data').pd
 
 var findCollectionFile = require('./find-collection-file')
 
@@ -11,107 +11,69 @@ module.exports = Collection
 function Collection () {
   if (!(this instanceof Collection)) return new Collection()
 
-  this.entries = []
-  this._xml = fs.readFileSync(path.join(__dirname, 'collection.nml'), 'utf-8')
-}
+  this._tree = null
 
-Collection.prototype.onLoad = noop
-Collection.prototype.onError = noop
+  Object.defineProperty(this, 'entries', {
+    get: this._getEntries
+  })
+}
 
 Collection.prototype.toXML = function () {
-  // take this.xml and rewrite entries from this.entries
-
-  return xml`
-    <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-    <NML VERSION="19">
-      <HEAD COMPANY="www.native-instruments.com" PROGRAM="Traktor"></HEAD>
-      <MUSICFOLDERS></MUSICFOLDERS>
-      <COLLECTION ENTRIES="${this.entries.length}"">
-        ${this.entries.map((entry, i) => {
-          var attrs = {}
-          Object.keys(entry.attributes).forEach(key => {
-            attrs[key] = entry.attributes[key]
-          })
-
-          return xml`
-            <ENTRY ${attrs}}>
-              ${Object.keys(entry.children).map(name => {
-                var attributes = entry.children[name]
-                var attrs = {}
-                Object.keys(attributes).forEach(key => {
-                  attrs[key] = attributes[key]
-                })
-
-                return xml`<${name} ${attrs}></${name}>`
-              })}
-            </ENTRY>`
-        })}
-      </COLLECTION>
-      <SETS></SETS>
-      <PLAYLISTS></PLAYLISTS>
-    </NML>`.toString()
+  return pd.xml(this._tree.write())
 }
 
-Collection.prototype.load = function (pathToCollectionFile) {
+Collection.prototype.load = function (pathToCollectionFile, callback) {
   if (!pathToCollectionFile) {
     return findCollectionFile((err, filepath) => {
       if (err) return this.onError(err)
 
-      this._load(filepath)
+      this._load(filepath, callback)
     })
   }
 
-  this._load(pathToCollectionFile)
+  this._load(pathToCollectionFile, callback)
 }
 
-Collection.prototype._load = function (filepath) {
+Collection.prototype._load = function (filepath, callback) {
   fs.readFile(filepath, 'utf-8', (err, xml) => {
-    if (err) return this.onError(err)
+    if (err) return callback(err)
 
     this._xml = xml
-
-    this.parse(xml)
+    this._tree = et.parse(this._xml)
+    callback()
   })
 }
 
-Collection.prototype.parse = function () {
-  var obj = parseXml(this._xml)
-  var nml = obj.children[0].toJSON()
-  var collection = nml.children.find(node => node.name === 'COLLECTION')
-  var filtered = collection.children.filter(isValidNode)
+Collection.prototype._getEntries = function () {
+  var collectionEl = this._tree.findall('COLLECTION')[0]
+  var entryElements = collectionEl.findall('ENTRY')
+  var entries = entryElements.map(Entry)
 
-  this.entries = filtered.map(entry => Entry(entry))
-
-  this.onLoad()
+  return entries
 }
 
-function isValidNode (node) {
-  return (
-    node.text !== '\n' &&
-    node.attributes &&
-    node.attributes.AUDIO_ID &&
-    node.ARTIST !== 'Native Instruments' &&
-    node.ARTIST !== 'Loopmasters'
-  )
+function Entry (node) {
+  if (!(this instanceof Entry)) return new Entry(node)
+
+  this._node = node
+  this._location = null
+
+  Object.defineProperty(this, 'location', {
+    get: () => {
+      return this._location || this._getLocation()
+    }
+  })
 }
 
-function Entry (entry) {
-  if (!(this instanceof Entry)) return new Entry(entry)
+Entry.prototype._getLocation = function () {
+  var location = this._node.getchildren().find(node => node.tag === 'LOCATION')
+  var volume = location.get('VOLUME')
+  var dir = location.get('DIR').replace(/\/:/g, '/')
+  var filename = location.get('FILE')
 
-  this.attributes = entry.attributes
-  this.children = entry.children
-    .filter(node => node.type === 'element')
-    .map(node => node.toJSON())
-    .reduce((children, node) => {
-      children[node.name] = node.attributes
+  if (os.platform() !== 'win32') { volume = '' }
 
-      return children
-    }, {})
-}
+  this._location = path.join(volume, dir, filename)
 
-Entry.prototype.location = function () {
-  var dir = this.children['LOCATION']['DIR'].replace(/\/:/g, '/')
-  var filename = this.children['LOCATION']['FILE']
-
-  return path.join(dir, filename)
+  return this._location
 }

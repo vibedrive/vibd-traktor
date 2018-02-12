@@ -8,5 +8,7 @@ if (require.main === module) {
 
 function generate (callback) {
   var collection = Collection()
-  callback(collection.toXML())
+
+  collection.load()
+  collection.on('load', () => callback(collection.toXML()))
 }

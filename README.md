@@ -2,32 +2,36 @@
 
 a [vibd](https://github.com/vibedrive/vibd) import plugin for importing collections from Traktor.
 
+1. find all the files in your traktor collection that are not already in vibd
+2. import the tracks in vibd with the traktor metadata
+3. generate a new traktor collection file with the file paths pointing to your vibd folder
+
+## usage
+
+**terminal:**
+
 ```shell
+$ vibd use vibd-traktor
 $ vibd import --format=traktor
 ```
 
-- find all the files in your traktor collection that are not already in vibd
-- create items for these tracks in vibd with the traktor metadata
-- copy these files over to the same folder
-- generate a new traktor collection file with the file paths pointing to your single music folder
+**node/browser:**
 
+```js
+var traktor = require('vibd-traktor')
+var vibd = Library('vibd')
 
-## api
-
-`var traktor = require('vibd-tratkor')`
-
-## `collection = traktor.Collection()`
-
-
-### `collection.load([<pathToCollectionFile>])`
-
-
-### `collection.toXML()`
+vibd.use(traktor)
+vibd.import('traktor', null, function (err) {
+  // done!
+})
+```
 
 ---
-## files
 
-### find-collection-file
+## scripts
+
+#### find-collection-file
 
 ```js
 var findCollectionFile = require('vibd-traktor/find-collection-file')
@@ -37,20 +41,12 @@ findCollectionFile(callback)
 
 Calls back with the path to your Traktor collection file.
 
-### parse-collection
-
-```js
-var parseCollection = require('vibd-traktor/parse-collection')
-
-parseCollection([,filepath], function callback (err, entries) {
-})
-```
 
 Given the path to a collection file, calls back with a serialized json dictionary of `AUDIO_ID`. 
 If no filepath is given, it will try to find it. 
 
 
-### generate-collection
+#### generate-collection
 
 ```js
 var parseCollection = require('vibd-traktor/generate-collection')
@@ -60,6 +56,7 @@ generateCollection([,collection], function callback (err, entries) {
 ```
 Takes an optional collection instance.
 Calls back with serialized nml collection file.
+
 
 ---
 
@@ -104,60 +101,4 @@ Calls back with serialized nml collection file.
     </CUE_V2>
   </ENTRY>
   ...
-```
-
-**example parse-collection output:**
-
-```json
-{
-  "AI0AAAEREAAS...==": {
-    "location": {
-      "dir": "/:Users/:kareniel/:Vibedrive/:Inbox/:",
-      "file": "Rusha & Blizza - Mood Boy.mp3",
-      "volume": "Macintosh HD",
-      "volumeid": "Macintosh HD"
-    },
-    "modificationInfo": {
-      "authorType": "user"
-    },
-    "info": {
-      "bitrate": "320000",
-      "filesize": "5512",
-      "flags": "14",
-      "importDate": "2018/1/28",
-      "playtime": "142",
-      "playtimeFloat": "141.061",
-      "releaseDate": "2017/1/1"
-    },
-    "tempo": {
-      "bpm": "60",
-      "bpmQuality": "100"
-    },
-    "loudness": {
-      "analyzedDb": "0.0325165",
-      "peakDb": "-0.308064",
-      "perceivedDb": "0.0325165"
-    },
-    "musicalKey": {
-      "value": "19"
-    },
-    "cueV2": {
-      "displOrder": "0",
-      "hotcue": "0",
-      "len": "0",
-      "name": "AutoGrid",
-      "repeats": "-1",
-      "start": "1034.23",
-      "type": "4"
-    },
-    "attributes": {
-      "modifiedDate": "2018/1/28",
-      "modifiedTime": "10082",
-      "title": "Rusha & Blizza - Mood Boy"
-    }
-  },
-  "AI0AAAERDFAS...==": { ... },
-  "AI0ATRSADIUO...==": { ... },
-  ...
-}
 ```

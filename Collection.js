@@ -1,8 +1,8 @@
 var fs = require('fs')
+var os = require('os')
 var path = require('path')
-var parseXml = require('@rgrove/parse-xml')
-var toCamelCase = require('to-camel-case')
-var noop = function () {}
+var et = require('elementtree')
+var pd = require('pretty-data').pd
 
 var findCollectionFile = require('./find-collection-file')
 
@@ -11,86 +11,69 @@ module.exports = Collection
 function Collection () {
   if (!(this instanceof Collection)) return new Collection()
 
-  this.entries = null
-  this._xml = fs.readFileSync(path.join(__dirname, 'collection.nml'), 'utf-8')
-}
+  this._tree = null
 
-Collection.prototype.onLoad = noop
-Collection.prototype.onError = noop
+  Object.defineProperty(this, 'entries', {
+    get: this._getEntries
+  })
+}
 
 Collection.prototype.toXML = function () {
-  // take this.xml and rewrite entries from this.entries
-  return this._xml
+  return pd.xml(this._tree.write())
 }
 
-Collection.prototype.load = function (pathToCollectionFile) {
+Collection.prototype.load = function (pathToCollectionFile, callback) {
   if (!pathToCollectionFile) {
     return findCollectionFile((err, filepath) => {
       if (err) return this.onError(err)
 
-      this._load(filepath)
+      this._load(filepath, callback)
     })
   }
 
-  this._load(pathToCollectionFile)
+  this._load(pathToCollectionFile, callback)
 }
 
-Collection.prototype._load = function (filepath) {
+Collection.prototype._load = function (filepath, callback) {
   fs.readFile(filepath, 'utf-8', (err, xml) => {
-    if (err) return this.onError(err)
+    if (err) return callback(err)
 
     this._xml = xml
-
-    this.parse(xml)
+    this._tree = et.parse(this._xml)
+    callback()
   })
 }
 
-Collection.prototype.parse = function () {
-  var obj = parseXml(this._xml)
-  var nml = obj.children[0].toJSON()
-  var collection = nml.children.find(node => node.name === 'COLLECTION')
-  var filtered = collection.children.filter(isValidNode)
-  var entries = {}
+Collection.prototype._getEntries = function () {
+  var collectionEl = this._tree.findall('COLLECTION')[0]
+  var entryElements = collectionEl.findall('ENTRY')
+  var entries = entryElements.map(Entry)
 
-  filtered.forEach(entry => {
-    entry = entry.toJSON()
-    entry.children.push({
-      name: 'attributes',
-      attributes: entry.attributes
-    })
-
-    var track = {}
-
-    entry.children
-      .filter(node => node.name)
-      .forEach(node => {
-        var attrs = Object.keys(node.attributes)
-          .reduce((dict, key) => {
-            var nextKey = toCamelCase(key.toLowerCase())
-            dict[nextKey] = node.attributes[key]
-
-            return dict
-          }, {})
-
-        track[toCamelCase(node.name.toLowerCase())] = attrs
-      })
-
-    var audioId = track.attributes.audioId
-
-    entries[audioId] = track
-    delete track.attributes.audioId
-  })
-
-  this.entries = entries
-  this.onLoad()
+  return entries
 }
 
-function isValidNode (node) {
-  return (
-    node.text !== '\n' &&
-    node.attributes &&
-    node.attributes.AUDIO_ID &&
-    node.ARTIST !== 'Native Instruments' &&
-    node.ARTIST !== 'Loopmasters'
-  )
+function Entry (node) {
+  if (!(this instanceof Entry)) return new Entry(node)
+
+  this._node = node
+  this._location = null
+
+  Object.defineProperty(this, 'location', {
+    get: () => {
+      return this._location || this._getLocation()
+    }
+  })
+}
+
+Entry.prototype._getLocation = function () {
+  var location = this._node.getchildren().find(node => node.tag === 'LOCATION')
+  var volume = location.get('VOLUME')
+  var dir = location.get('DIR').replace(/\/:/g, '/')
+  var filename = location.get('FILE')
+
+  if (os.platform() !== 'win32') { volume = '' }
+
+  this._location = path.join(volume, dir, filename)
+
+  return this._location
 }
